@@ -1,65 +1,103 @@
+<div align="center">
+
 # 光阑视界 IrisVision
 
-> 软件中文名**光阑视界**、英文名 **IrisVision**（V2.16.5 起；主窗体标题与程序集显示名均为此名）。
-> 工程名 / exe 文件名 / 命名空间 / 单实例互斥名统一为 `IrisVision` / `IrisVision.exe`
-> （V2.16.9 起彻底更名，此前叫 CommandCenter；项目未上线，不兼容旧名）。
+**产线双相机视觉检测上位机：汇川 PLC 三拍握手指挥"扫码、几号点位拍"，
+它派两台基恩士相机切程序开拍，每张图一个 OK/NG 徽标落进大屏窗口矩阵，
+判定立刻写回 PLC 放行，图片按 SN 全量归档。**
 
-产线相机检测上位机（Windows 桌面程序，.NET Framework 4.7.2 WinForms）：
-**PLC 说"扫码"，它扫条码；PLC 说"几号点位拍照"，它派相机拍；每张图一个 OK/NG，
-全部显示在大屏窗口矩阵里，判定结果写回 PLC 放行。**
+![version](https://img.shields.io/badge/version-V2.17.1-blue)
+![framework](https://img.shields.io/badge/-.NET%20Framework%204.7.2%20WinForms-5C2D91?logo=dotnet)
+![language](https://img.shields.io/badge/language-C%23%207.3-239120?logo=csharp)
+![platform](https://img.shields.io/badge/platform-Windows-0078D6?logo=windows)
+![tests](https://img.shields.io/badge/tests-612%20regression%20%2B%2080%20UI-passing)
 
-<img width="860" alt="主界面：21 个检测窗口，3 个 OK（演示数据）" src="docs/images/main_ok.png" />
+软件中文名**光阑视界**、英文名 **IrisVision**（V2.16.9 起工程名 / exe 文件名 /
+命名空间统一为 IrisVision；此前叫 CommandCenter，项目未上线不兼容旧名）。
+Windows 桌面程序，第三方 DLL 随仓库 `libs/` 拷贝——**离线可编译，不依赖 NuGet**。
 
-| 你是谁 | 看哪份手册 |
+</div>
+
+---
+
+## 你是谁，看哪份手册
+
+| 你是谁 | 看哪份 |
 | --- | --- |
 | 现场操作员（第一次摸软件） | `docs/光阑视界操作员手册.md`：开机、看图、报警处置、点检禁忌 |
 | 客户技术员/工艺工程师 | `docs/光阑视界客户技术手册.md`：换型、点位配置、MES 联调、排障 |
 | 我方现场工程师 | `docs/光阑视界内部手册.md`：账号全流程、技术实现篇、交付清单 |
 
+## 界面速览
+
+没开工时主界面是 21 格深灰空窗口（U171 默认自适应铺排 3×7），标题栏型号/序列号/计数/状态灯一排，
+底部"等待 PLC 请求"即待机正常。PLC 一发拍照请求，窗口逐格出图、右下角徽标变色：
+
+| 空闲待机（21 格深灰） | 全 OK 件（演示数据） |
+| --- | --- |
+| ![主界面空闲](docs/images/main_idle.png) | ![主界面全 OK](docs/images/main_ok.png) |
+| **混有 NG 件（总数 5、OK 3、NG 2）** | **系统设置（管理员登录后）** |
+| ![主界面混 NG](docs/images/main_ng.png) | ![系统设置](docs/images/settings.png) |
+| **窗口↔点位 + 点位→程序 配置** | **存图目录结构配置** |
+| ![窗口点位配置](docs/images/windowpoint.png) | ![目录结构配置](docs/images/dirtree.png) |
+| **管理员登录** | **人工补录序列号** |
+| ![登录](docs/images/login.png) | ![补录 SN](docs/images/serialinput.png) |
+| **扫码枪异常提醒（可今日静音）** | **开发者模式（通讯验证 + 账号管理）** |
+| ![扫码枪异常](docs/images/scannerfail.png) | ![开发者模式](docs/images/devmode.png) |
+| **产品型号↔PLC 序号配置** | |
+| ![型号配置](docs/images/modelindex.png) | |
+
+## 快速开始
+
+```powershell
+# ① 构建（产物 IrisVision\bin\Debug\IrisVision.exe，启动即用）
+& "D:\Program Files\Microsoft Visual Studio\18\Enterprise\MSBuild\Current\Bin\MSBuild.exe" `
+  IrisVision/IrisVision.csproj /p:Configuration=Debug /p:Platform=AnyCPU /t:Build /nologo /v:m /m
+
+# ② 自动化验证（构建 → 612 条回归用例 → 80 条 UI 交互 → 两轮进程冒烟，一条命令全绿）
+powershell -ExecutionPolicy Bypass -File ".opencode\skills\irisvision-test\scripts\run-all.ps1"
+
+# ③ 桌面快捷方式（名"光阑视界 IrisVision"，图标取 exe 内嵌）
+powershell -ExecutionPolicy Bypass -File ".\IrisVision\tools\Create-DesktopShortcut.ps1"
+
+# ④ 现场部署版（代码混淆防反编译，一键出 zip）
+& ".\IrisVision\build-obfuscated.ps1"
+```
+
+- 首次启动自动生成 `Config/appconfig.json` 默认配置（按现场两台相机 + 一台 TCP 扫码枪兜底），无需手工初始化。
+- **一键激活**：现场工控机双击 `IrisVision/tools/auto_activate.bat` 即永久激活；
+  程序内主界面【选项】→【软件授权】也可人工激活。未激活只置灰【系统设置】，**不拦生产**。
+
 ## 30 秒看懂一轮生产
 
 ```
 PLC 写 40001=1（扫码请求）
-   ▼  序列号框跳出条码（没扫到就点【人工补录】手输）
-PLC 写 40002/40003=点位号（拍照请求）
-   ▼  相机切程序 → T2 拍照 → OK/NG 判定立刻写回 PLC（不等传图）
-窗口逐格出图、右下角徽标变色，标题栏计数涨（只统计当前这一件）
-   ▼  下一件到：图片和计数自动清零重来
+   ▼  收到请求即清空窗口图 + 标题栏计数清零——扫码=新检测件到位
+序列号框跳出条码（没扫到就点【人工补录】手输，或扫码枪异常弹窗提醒）
+   ▼  SN 到位，PLC 写 40002/40003=点位号（相机拍照请求）
+按"型号 + 点位"查程序表 → 发 PW,nnn 切相机程序 → 发 T2 拍照 + 读 OK/NG
+   ▼  判定一出结果立刻写回 PLC（40005/40006=1 OK / 2 NG / 3 点位禁用跳过），PLC 不等取图
+并行异步：相机 FTP 推图 → 上位机取最新 jpeg+iv4p → 归档 + 删源 → 窗口矩阵显示
+   ▼  等 PLC 复位请求 → 上位机复位结果 → 进入下一件（下一件，图片计数自动清零重来）
 ```
 
-混进 NG 长这样——第 4、5 格红徽标，标题栏 NG: 2，操作员去看那两格的图：
+三拍握手（PLC 主站 ↔ 上位机从站，一进一出对账，防残值误当新结果）：
+
+```
+ PLC（主站，汇川）                     上位机（从站，本程序 502 端口）
+     │ ① 写请求 ≠ 0                        │
+     ├─ 40001 扫码 / 40002/40003 相机 ────→ ├ 读到请求，开工
+     │                                      │ 扫码 / 切程序 / 拍照 / 判定
+     │ ② 读结果                             │ ④ 复位结果 = 0
+     ◀── 40004 扫码 / 40005/40006 相机 ─────┤
+     │    （1=OK  2=NG  3=点位禁用跳过）      │
+     │ ③ 读到结果后复位请求 = 0              │
+     ├──────────────────────────────────→  │ 看到请求清零 → 复位结果 → 下一拍
+```
+
+混进 NG 长这样——第 4、5 格红徽标，标题栏 NG: 2，操作员照着红格里那张图处置：
 
 <img width="860" alt="混有 NG：总数 5、OK 3、NG 2（演示数据）" src="docs/images/main_ng.png" />
-
-```
-┌──────────────────────────────────────────────────────────┐
-│ 上位机 IrisVision（本程序）                              │
-│                                                            │
-│  ScannerService ──┐                                        │
-│  (扫码枪读SN)      │                                        │
-│                   ▼                                        │
-│  ProductionCoordinator ◀──PLC 触发、给 PLC 回结果           │
-│  （生产编排大脑，三通道状态机）                              │
-│                   │                                        │
-│  KeyenceIV4Camera ─┘   ImageStore ──► 归档图片 + 窗口显示    │
-└──────────────────────────────────────────────────────────┘
-         ▲                              ▲               ▲
-         │ Modbus TCP（从站，502口）      │ TCP 触发       │ TCP 无协议
-         │                              │ + FTP 推图     │ 读码
-   汇川 PLC                        上/下相机            扫码枪
-   （主站，指挥中心）                     （拍照）            （扫SN）
-```
-
-## 技术栈
-
-| 项 | 内容 | 说明 |
-| --- | --- | --- |
-| 框架 | .NET Framework 4.7.2 + WinForms | C# 7.3，非 .NET Core |
-| PLC 通讯 | NModbus 3.0.83 | 上位机做 **Modbus TCP 从站**，监听 502 |
-| 相机 | 基恩士 IV4 系列（TCP 无协议） | 发指令触发拍照、读 OK/NG；图片走 **FTP 推图**（jpeg + iv4p 双文件归档） |
-| 扫码枪 | 基恩士 SR 系列（TCP 无协议 / 串口） | 默认 TCP，上位机连上后发 `LON` 开始读码 |
-| 配置序列化 | Newtonsoft.Json | `Config/appconfig.json`，小驼峰命名 |
-| 依赖部署 | 第三方 DLL 拷在 `IrisVision/libs/` | csproj 直接引用，**离线可编译，不依赖 NuGet** |
 
 ## 软件架构
 
@@ -68,161 +106,47 @@ PLC 写 40002/40003=点位号（拍照请求）
 ```
 ┌───────────────────────────────────────────────────────────────┐
 │ 界面层    Views/ Controls/                                     │
-│   MainForm          主窗体：标题栏 + 窗口矩阵 + 事件接线           │
-│   SettingsForm      系统设置（管理员）                           │
-│   WindowPointForm   窗口↔点位 + 点位→相机程序 可视化配置           │
-│   DirTreeEditForm   存图目录结构可视化配置                       │
-│   LoginForm         账号登录 + 改密码                            │
-│   DeveloperModeForm 开发者模式（原名 DevTestForm：通讯验证 + 账号管理） │
-│   CameraDisplayControl   单窗口控件：显示图 + OK/NG 徽标           │
+│   MainForm                主窗体：标题栏 + 窗口矩阵 + 事件接线     │
+│   SettingsForm            系统设置（管理员）                     │
+│   WindowPointForm         窗口↔点位 + 点位→相机程序 可视化配置     │
+│   DirTreeEditForm         存图目录结构可视化配置                 │
+│   ModelIndexEditForm      型号↔PLC 序号配置                     │
+│   LoginForm               账号登录 + 改密码                     │
+│   DeveloperModeForm       开发者模式（通讯验证 + 账号管理）        │
+│   CameraDisplayControl    单窗口控件：显示图 + OK/NG 徽标          │
 ├───────────────────────────────────────────────────────────────┤
 │ 业务编排  Services/                                             │
-│   ProductionCoordinator  生产流程大脑（三通道状态机，核心）        │
+│   ProductionCoordinator   生产流程大脑（三通道状态机，核心）        │
+│   ConnectionMonitor       后台心跳 + 断线自动重连 + 边沿日志        │
 ├───────────────────────────────────────────────────────────────┤
 │ 通讯    Services/                                               │
-│   PlcService          Modbus TCP 从站（请求/结果握手）             │
-│   KeyenceIV4Camera    相机 TCP 触发 + 读判定 + FTP 取图            │
-│   ScannerTcp/SerialService  扫码枪 TCP/串口，自动触发 + 收码        │
-│   ConnectionMonitor   后台心跳 + 断线自动重连 + 边沿日志           │
+│   PlcService              Modbus TCP 从站（请求/结果握手）         │
+│   KeyenceIV4Camera        相机 TCP 触发 + 读判定 + FTP 取图         │
+│   ScannerTcp/SerialService 扫码枪 TCP/串口，连上发 LON + 收码       │
+│   MesService              扫码 SN 后台上传 MES（可选，默认开）       │
 ├───────────────────────────────────────────────────────────────┤
 │ 存储    Utils/ Models/                                          │
-│   ConfigStore     appconfig.json 读写 + 旧配置自动补齐             │
-│   ImageStore      监听 FTP 新图、归档双格式、定期清理过期           │
-│   SecurityUtil    密码 SHA-256 哈希 + 记住密码 DPAPI               │
-│   AppConfig       全部可配置项模型                                │
+│   ConfigStore             appconfig.json 读写 + 旧配置自动补齐     │
+│   ImageStore              监听 FTP 新图、归档双格式、定期清理过期    │
+│   SecurityUtil            密码 SHA-256 哈希 + 记住密码 DPAPI        │
+│   SoftwareActivation      软件授权（MD5 授权码，跟机器）            │
+│   AppConfig               全部可配置项模型                        │
 └───────────────────────────────────────────────────────────────┘
 ```
 
-通讯层全部坚持一条铁律（曾为此冻过界面）：**UI 线程不做网络 IO，轮询/连接/读写一律后台线程 +
-强制超时 + 完成后回 UI 刷新**，保证拨了不可达的 IP 界面也不卡。
-
-## 一轮生产：业务流与握手时序（详细版）
-
-```
-PLC 写 40001=1（扫码请求）
-   ▼  （V2.14.28）收到请求即清空窗口图 + 标题栏计数清零——扫码=新检测件，重新统计本件检测点
-扫码枪读 SN ──► 标题栏序列号更新（也可手动【人工补录】）
-   ▼  SN 到位，PLC 写 40002/40003=点位号（相机拍照请求）
-按"型号 + 点位"查相机程序表 → 发 PW,nnn 切相机程序 → 发 T2 拍照 + 读 OK/NG
-   ▼  判定一出结果立刻写回 PLC（40005/40006=1 OK / 2 NG），PLC 不用等取图
-并行异步：相机 FTP 推图 → 上位机取最新 jpeg+iv4p → 归档到存图目录 → 窗口矩阵显示
-   ▼
-等 PLC 复位请求 → 上位机复位结果 → 进入下一轮
-```
-
-三拍握手（PLC 主站 ↔ 上位机从站，一进一出对账，防止残值误当新结果）：
-
-```
- PLC（主站）                          上位机（从站）
-     │ ① 写请求 ≠ 0                        │
-     ├─ 40001 扫码请求 / 40002/40003 相机 →┤ 读到请求，开工
-     │                                     │ 扫码/拍照/判定
-     │ ② 读结果                            │ ④ 复位结果 = 0
-     ◀─ 40004 扫码结果 / 40005/40006 相机 ──┤
-     │   （1=OK, 2=NG, 3=点位禁用跳过）      │
-     │ ③ 读到结果后复位请求 = 0             │
-     ├──────────────────────────────────→ │ 看到请求清零 → 复位结果 → 下一拍
-```
-
-## 界面导览（三张图认识软件）
-
-没开工时主界面是 21 格深灰空窗口（U171），标题栏型号/序列号/计数/状态灯一排，
-底部"等待 PLC 请求"即待机正常。现场大屏就是这个样子铺满显示器：
-
-<img width="860" alt="主界面空闲：21 格空窗口待机" src="docs/images/main_idle.png" />
-
-点【系统设置】（管理员登录后）进配置页：PLC 监听、窗口行列、存图目录、
-相机表、扫码枪表全在这里，保存即热生效：
-
-<img width="860" alt="系统设置：PLC/显示/相机/扫码枪配置" src="docs/images/settings.png" />
-
-【窗口/点位配置】管"哪个窗口拍哪个点位"：上半格子矩阵交换/禁用窗口，
-下半表格配"点位→相机程序号"（每台相机按型号各一张表）：
-
-<img width="860" alt="窗口点位与相机程序配置" src="docs/images/windowpoint.png" />
-
-## 目录结构
-
-```
-IrisVision/
-├── Views/          界面窗体（MainForm / SettingsForm / LoginForm / DeveloperModeForm /
-│                   WindowPointForm / DirTreeEditForm / SerialInputForm…）
-│                   ※ 静态布局在 *.Designer.cs 里可视化维护；动态部分（窗口矩阵、状态灯）
-│                      在业务文件里运行时生成
-├── Controls/       自绘控件（CameraDisplayControl 相机窗 + OK/NG 徽标等）
-├── Services/       通讯与业务编排（ProductionCoordinator / PlcService / KeyenceIV4Camera /
-│                   ImageStore / ScannerService / ScannerTcpService / ConnectionMonitor）
-├── Models/         配置模型（AppConfig 全量配置 / WindowData 单轮数据）
-├── Utils/          ConfigStore（JSON 读写）/ SecurityUtil / LogHelper（按天日志）
-├── libs/           本地第三方 DLL（NModbus / Newtonsoft.Json）
-├── docs/           文档中心（见文末）
-└── Config/         运行时配置 appconfig.json（不入库，首次启动自动生成）
-```
-
-## 构建
-
-```powershell
-& "D:\Program Files\Microsoft Visual Studio\18\Enterprise\MSBuild\Current\Bin\MSBuild.exe" `
-  IrisVision/IrisVision.csproj /p:Configuration=Debug /p:Platform=AnyCPU /t:Build /nologo /v:m /m
-```
-
-产物：`IrisVision\bin\Debug\IrisVision.exe`，启动后等几秒进程存活即冒烟通过。
-
-### 自动化验证（V2.15.18，改动后必跑）
-
-```powershell
-powershell -ExecutionPolicy Bypass -File ".opencode\skills\irisvision-test\scripts\run-all.ps1"
-```
-
-一条命令跑完三层验证：**构建 → 137 条回归用例（离线可跑，覆盖 SN/型号寄存器打包、PLC 从站读写、
-配置兼容、扫码过滤、窗口布局、程序映射、密码安全、I18n）→ 两轮进程冒烟**；任一失败非零退出。
-新增可测功能/修 bug 后，对应用例必须同步沉淀进该 skill（见 `.opencode/skills/irisvision-test/SKILL.md`）。
-
-## 发布（代码混淆，V2.14.31；自动打包 zip，V2.16.0）
-
-现场部署用**混淆版**，防止反编译拿到类名/方法名/设备 IP/寄存器号/相机指令等业务细节：
-
-```powershell
-& ".\IrisVision\build-obfuscated.ps1"
-```
-
-- 流程：Release 构建 → Obfuscar 混淆 → 补第三方 dll + config → 启动保活冒烟 → **自动打包上传 zip**（版本号取最近 git tag）。
-- 产物：
-  - 上传包 `IrisVision\bin\IrisVision_{版本号}_obfuscated.zip`（含 exe + 两第三方 dll + config + Mapping.txt，已排除运行时 Logs），**直接上传/解压部署**；
-  - 混淆目录 `IrisVision\bin\Obfuscated\`，整个目录拷去现场亦可运行。
-- 混淆只改名字/字符串（类名变 A.a 乱码、字符串运行时解密），**不改功能**；`Models` 配置模型除外——
-  属性名必须保留（`appconfig.json` 字段名依赖它），保证现场旧配置可无缝升级。
-- 混淆版 PDB 失配、无法断点调试；现场/开发排查问题请用 Debug 版 + `Logs/` 日志。
-- `bin\Obfuscated\Mapping.txt` 是"原名↔混淆名"对照表，仅内部反查崩溃栈用，勿随安装包发放。
-- 依赖工具 `tools\Obfuscar\Obfuscar.Console.exe` 已随仓库入库（离线可用，策略同 `libs/`）。
-
-### 软件图标与桌面快捷方式（V2.16.5）
-
-- 图标唯一来源 `IrisVision/Resources/app.ico`（由 `app.png` 源图重制的 16~256 七层多尺寸），
-  经 csproj `<ApplicationIcon>` 编译进 exe——exe 文件图标、资源管理器、桌面快捷方式、
-  任务栏（运行中 + 固定）四处自动取它；9 个窗体标题栏图标统一走 `Utils/AppIcon.cs`
-  取自身 exe 内嵌图标（现场部署不需多拷资源文件）。
-- 桌面快捷方式一键创建（名"光阑视界 IrisVision"，图标取目标 exe 内嵌图标）：
-
-```powershell
-powershell -ExecutionPolicy Bypass -File ".\IrisVision\tools\Create-DesktopShortcut.ps1"
-```
-
-默认按 混淆版→Release→Debug 自动找 exe，也可用 `-ExePath` 显式指定现场部署路径。
-换图标后重编 + 重跑本脚本即可刷新；任务栏已固定的旧图标注销重登/重启资源管理器后生效。
+通讯层坚持一条铁律（曾为此冻过整窗界面）：**UI 线程不做网络 IO**——轮询/连接/读写 PLC 与相机
+一律后台线程 + 强制超时 + 完成后回 UI 刷新，拨了不可达的 IP 界面也不卡。
 
 ## 现场设备对表
 
 生产现场的接线关系（默认值，都可在系统设置里改）：
 
-<img width="1880" height="1025" alt="image" src="https://github.com/user-attachments/assets/728c6386-b4af-4af6-b39a-f0aff3891ae8" />
-
 ```
                          生产现场（19.87.6.x 网段）
    汇川 PLC ──────Modbus TCP──▶ 上位机 [监听 0.0.0.0:502，从站]
-                                    ▲   ▲        │
-      上位机连相机/枪（主动）──────────┤   │
-                                    │   │ 相机拍照后把图 FTP 推到上位机目录
+                                     ▲   ▲        │
+       上位机连相机/枪（主动）──────────┤   │
+                                     │   │ 相机拍照后把图 FTP 推到上位机目录
    上相机 19.87.6.213 ◀──TCP 触发────┤   │  ─────────► D:\IV存图\2
    下相机 19.87.6.212 ◀──TCP 触发────┤   │  ─────────► D:\IV存图\1
    扫码枪 19.87.6.100:9004 ◀─TCP─────┘   （上位机监听落盘目录取图，无需装 FTP 服务器）
@@ -235,46 +159,63 @@ powershell -ExecutionPolicy Bypass -File ".\IrisVision\tools\Create-DesktopShort
 | 下相机（基恩士 IV4） | `19.87.6.212:8500` | 真编号 **cameraId=1**，拍照推图到 `D:\IV存图\1`；PLC 通道 40003/40006 |
 | 扫码枪（基恩士 SR） | `19.87.6.100:9004` | TCP 无协议，连上后发 `LON` 开始读码；串口枪可选（默认 COM3/115200/1/None） |
 
-⚠️ 上/下相机的 **IP 与 FTP 目录是"安装位置相反配对"**：上相机（装在上面那台）真编号是 2、推到 `\2`；
-它们（`19.87.6.213/212`、`cameraId 2/1`、FTP 目录 `\2/\1`）在代码 `CameraConfig.DefaultCameras()` 和
-`appconfig.json` 的 `cameras` 段里**唯一维护**，改动只动这两处。
+⚠️ 上/下相机的 **IP 与 FTP 目录是"安装位置相反配对"**：上相机（装在上面那台）真编号是 2、
+推图到 `\2`。IP/编号/目录在 `CameraConfig.DefaultCameras()` 与 `appconfig.json` 的 `cameras` 段
+两处唯一维护，改动只动这两处。
+
+## 型号与窗口矩阵
+
+窗口总数、铺排、每台相机"点位→程序号"表全部**按产品型号走**（默认 U171、Z121，可加新型号）：
+
+| 型号 | 上相机点位 | 下相机点位 | 自适应铺排 |
+| --- | --- | --- | --- |
+| U171（默认型号） | 1~17 | 1~4 | 3×7=21 格（列最多 7、行列和最小优先） |
+| Z121 | 1~18 | 1~3 | 3×7=21 格（同上） |
+
+- **切换型号**：主界面标题栏型号下拉直切——写盘 + 窗口矩阵按新型号点位表重排 + 立即下发 PLC
+  （40007 序号 + 40008~40012 型号 ASCII），设备连接一路复用不断开；**换型不用重启**。
+- **窗口↔点位映射**：默认"前上相机后下相机"铺排；在【窗口/点位配置…】里可**编辑点位 / 交换位置 /
+  恢复默认**，结果按型号存 `display.windowPointMaps`；被禁用的点位跟着窗口走（交换时禁用标志一起搬）。
+- **存图点位 = 相机点位号**（不是窗口序号）：上下相机点位号各自从 1 起会重复，靠存图目录里的
+  `{相机}` 层隔开。
 
 ## 可配置项
 
-全部参数集中在 `Config/appconfig.json`（首次启动自动按默认值生成，kebab 命名的节点如下）：
+全部参数集中在 `Config/appconfig.json`（首次启动自动按默认值生成，小驼峰/kebab 命名）：
 
 ```
 appconfig.json 顶层结构
 ├── productModel      当前运营型号（默认 "U171"）
 ├── productModels     全部型号候选（默认 ["U171","Z121"]）
-├── language          界面语言（V2.15.0，默认 "zh-CN"，可选 "en-US"）
-├── theme             界面主题（V2.16.2，默认 "Light"，可选 "Dark"深色）
-├── cameras[]         相机表（每台：IP/端口/编号/FTP目录/PLC通道/点位程序表）
-├── plc{}             从站监听 + 寄存器地址 + 型号→PLC序号映射
+├── language          界面语言（默认 "zh-CN"，可选 "en-US"）
+├── theme             界面主题（默认 "Light"，可选 "Dark" 深色）
+├── cameras[]         相机表（每台：IP/端口/编号/FTP 目录/PLC 通道/点位程序表）
+├── plc{}             从站监听 + 寄存器地址 + 型号→PLC 序号映射
 ├── display{}         显示矩阵行列/自适应开关/OK NG 颜色与显隐开关
 ├── image{}           存图根目录/目录层级/保留天数/时间戳开关
 ├── scanners[]        扫码枪表（TCP 与串口各自独立成行）
-├── sn{}              扫码 SN 去向（V2.15.20 二选一：Mes 默认 / Plc，纯配置变量无界面）
+├── sn{}              扫码 SN 去向（二选一：Mes 默认 / Plc，纯配置变量无界面）
 └── security{}        管理员 + 开发者账号
 ```
 
-更换现场配置优先走"系统设置"界面（保存即热生效），不手改 json。下面按业务分组说明。
+更换现场配置优先走"系统设置"界面（保存即热生效，改配置免重启），不手改 json。
 
 ### 相机（cameras[]）
 
-`cameras` 是数组，每台相机一条。触发拍照由 **PLC 请求点位号 → 上位机按"型号+点位"查程序表 → 切程序 →
-T2 拍照** 完成。一台相机 = 一个 FTP 目录，所有点位图混放，上位机取图时**扫目录取"修改时间最新"的一对**
-（文件名不保证固定编号），归档后**删除 FTP 源文件**（中转即删）。
+`cameras` 是数组，每台相机一条。一台相机 = 一个 FTP 目录，所有点位图混放；拍照由
+**PLC 请求点位号 → 按"型号+点位"查程序表 → PW 切程序 → T2 拍照** 完成。上位机取图
+**事件路径优先**（相机推图触发文件事件的路径直接用，外源高频推图不会串到别的枪），
+配对失败回退扫目录取"修改时间最新"的一对（文件名不保证固定编号），归档后**删除 FTP 源文件**（中转即删）。
 
-| 字段 | 默认（上相机 | 下相机） | 白话说明 |
-| --- | --- | --- | --- |
+| 字段 | 默认（上相机 \| 下相机） | 白话说明 |
+| --- | --- | --- |
 | `name` | 上相机 \| 下相机 | 显示名，也当 `{相机}` 目录层名 |
 | `cameraId` | 2 \| 1 | 相机真编号 = 存图目录号，窗口↔点位反查的关联键 |
 | `ipAddress` | 19.87.6.213 \| 19.87.6.212 | TCP 触发 IP |
 | `commandPort` | 8500 | 触发指令端口 |
 | `ftpUploadDir` | D:\IV存图\2 \| D:\IV存图\1 | 相机 FTP 推图的落盘目录，上位机监听它取图 |
 | `plcRequestAddress` | 2 \| 3 | 该相机拍照请求寄存器（协议号 = 值 + 40000，即 40002/40003） |
-| `plcResultAddress` | 5 \| 6 | 该相机结果寄存器（协议 40005/40006）；**0 = 未配置通道、不参与轮询** |
+| `plcResultAddress` | 5 \| 6 | 结果寄存器（协议 40005/40006）；**0 = 未配置通道、不参与轮询** |
 | `triggerCommand` | T1 | 仅触发拍照，不读判定 |
 | `triggerAndReadCommand` | T2 | 触发 + 读判定（主用） |
 | `readResultCommand` | RT | 单独读判定值 |
@@ -283,9 +224,8 @@ T2 拍照** 完成。一台相机 = 一个 FTP 目录，所有点位图混放，
 | `timeoutMs` / `responseTimeoutMs` | 3000 / 5000 | 指令收发超时 |
 | `stationPrograms` / `modelStationPrograms` | 见下 | 点位→相机程序号映射表 |
 
-**点位→程序号映射（每种产品型号一张表）**：现场是"28 个窗口点位由两台相机分工拍"（不是每台拍全部），
-且各相机程序库互相独立、同一台相机在不同型号下点位也不一样（如 U171 上相点位 1~17 用 P000~P012、
-Z121 上相点位 1~18 用 P013~P028）。所以按 **相机 + 型号** 分表：
+**点位→程序号映射（每种产品型号一张表）**：两台相机分工拍各自动点位，且各相机程序库互相独立、
+同一台相机在不同型号下映射也不同，所以按 **相机 + 型号** 分表：
 
 ```
 modelStationPrograms:
@@ -293,118 +233,71 @@ modelStationPrograms:
    { modelName: "Z121", programs: [{ stationNo: 1, programNo: 13 }, …] }]
 ```
 
-触发前按本轮点位查表：命中先发 `PW,nnn` 切到该点位程序再 `T2`（程序号 `0~127`，`0` 合法；
-同程序相邻已切过会自动跳过重发）；**未命中不切**，保持相机当前程序。配置入口在"窗口/点位配置…"对话框。
+触发前按本轮点位查表：命中先发 `PW,nnn` 切到该程序再 `T2`（程序号 0~127 合法；
+相邻点位同程序会自动跳过重发）；**未命中不切**，保持相机当前程序。配置入口在【窗口/点位配置…】。
 
 ### PLC 通讯（plc{}）
 
-上位机是 **Modbus TCP 从站**，监听本机端口等 PLC 主站连入。寄存器表（值 = **DataStore 索引**，
-协议号 = 索引 + 40000，配置里填索引即可，如协议 40002 就填 2）：
+上位机是 **Modbus TCP 从站**，监听本机端口等 PLC 主站连入。寄存器表（配置里填 = **DataStore 索引**，
+协议号 = 索引 + 40000，如协议 40002 就填 2）：
 
 | 寄存器 | 方向 | 含义 | 取值 |
 | --- | --- | --- | --- |
 | 40001 | PLC→上位机 | 扫码请求 | 1=请求扫码、0=无 |
-| 40002 | PLC→上位机 | 上相机拍照请求 | 1~255 = 点位号 |
-| 40003 | PLC→上位机 | 下相机拍照请求 | 1~255 = 点位号 |
-| 40004 | 上位机→PLC | 扫码结果 | 0=复位、1=OK、2=NG（**V2.14.33：PLC 拿到 2 死等人工补录**，补录后上位机改写成 1） |
-| 40005 | 上位机→PLC | 上相机结果 | 1=OK、2=NG、**3=点位禁用跳过** |
-| 40006 | 上位机→PLC | 下相机结果 | 同上 |
+| 40002 / 40003 | PLC→上位机 | 上/下相机拍照请求 | 1~255 = 点位号 |
+| 40004 | 上位机→PLC | 扫码结果 | 0=复位、1=OK、2=NG（PLC 拿到 2 死等人工补录，补录后上位机改写成 1） |
+| 40005 / 40006 | 上位机→PLC | 上/下相机结果 | 1=OK、2=NG、**3=点位禁用跳过** |
 | 40007 | 上位机→PLC | 型号序号 | 查 `plc.modelIndexes`，默认 Z121=1、U171=2 |
 | 40008~40012 | 上位机→PLC | 型号 ASCII 字符串 | 每寄存器 2 字符、高字节在前、最多 10 字符 |
-| 40013~40024 | 上位机→PLC | 扫码 SN 序列号（V2.15.17） | ASCII 编码同型号字符串（24 字符）；扫码 OK/人工补录=本件 SN，失败/超时/上电=全 0；PLC 在读到 40004=1 后读取。**V2.15.19：写不写本区受 `sn.target` 控制**（Mes 目标时不写，见下节） |
+| 40013~40024 | 上位机→PLC | 扫码 SN 序列号 | ASCII 编码同型号字符串（24 字符）；扫码 OK/人工补录=本件 SN，失败/超时/上电=全 0；PLC 在读到 40004=1 后读取。写不写本区受 `sn.target` 控制（Mes 目标时不写，见下节） |
 
 关键字段：`ipAddress`（监听 IP，`0.0.0.0`=所有网卡）、`port`（502）、`unitId`（1，需与 PLC 主站一致）、
 `scanRequestAddress`/`scanResultAddress`（默认 1/4）、`productModelIndexAddress`（7）/
-`productModelAddress`（8）`productModelLen`（5）、`modelIndexes`（型号→序号映射）、
-`scanSerialNumberAddress`（13，SN 区起始=协议 40013）/`scanSerialNumberLen`（12 寄存器=24 字符）。
+`productModelAddress`（8）/`productModelLen`（5）、`modelIndexes`（型号→序号映射）、
+`scanSerialNumberAddress`（13）/`scanSerialNumberLen`（12 寄存器 = 24 字符）。
 
 几个重要的行为约定：
-- **上电初始化复位**：从站一建站成功，先把 40004~40006 结果寄存器全写 0（V2.15.17 起 SN 区一并清 0），防断电重启残留旧值被当新结果。
-- **SN 随扫码结果走（V2.15.17）**：与产品型号同一套设定——扫码 OK / 人工补录覆盖成 1 时写本件 SN
-  （先写 SN 再写结果），失败/超时清 0；无独立握手信号，PLC 读到 40004=1 后读 40013 起即得本件序列号。
-- **相机结果"判定即写"**：相机 OK/NG 一判出来马上写 40005/40006，**不等** FTP 取图归档（图传输会让
-  PLC 白等几百毫秒~2 秒）；图缺失只影响显示和存图，判定不回退。
-- **通道释放闸门**：相机通道要等"PLC 已复位请求 **且** 拍照任务完全结束"才释放，防止下一拍请求并发
-  起新任务导致同相机"取图/删源混图"。
 
-### SN 去向（sn{}，V2.15.20 二选一，默认传 MES）
+- **上电初始化复位**：从站一建站成功，先把 40004~40006 结果寄存器 + SN 区全写 0，防断电重启残留旧值被当新结果。
+- **PLC 写请求后必须保持该值**，直到读到对应结果≠0 才清零；"写入请求后立刻清零"（脉冲式请求）会碰运气丢失触发点位。
+- **相机结果"判定即写"**：判定一出马上写 40005/40006，**不等** FTP 取图归档；图缺失只影响显示和存图，判定不回退。
+- **通道释放闸门**：相机通道等"PLC 已复位请求 **且** 拍照任务完全结束"才释放，防止下一拍并发取图混图。
 
-扫码 SN 序列号的"到哪去"由配置变量二选一控制（**设置页无界面入口**，手改
-`Config\appconfig.json` 后重启生效）。对接要点与协议定稿后的代码修改位置见
-`docs/MES对接说明.md`：
+### SN 去向（sn{}，二选一，默认传 MES）
+
+扫码 SN 的去向由配置变量二选一（**设置页无界面入口**，手改 `Config\appconfig.json` 后重启生效）：
 
 | 字段 | 默认 | 白话说明 |
 | --- | --- | --- |
-| `target` | `Mes` | `Mes`=SN 不写 PLC、后台 HTTP POST 给 MES（**默认**）；`Plc`=写 PLC SN 寄存器区（40013 起，既有流程，不传 MES）。非法值自动回落 `Mes` |
+| `target` | `Mes` | `Mes`=SN 不写 PLC、后台 HTTP POST 给 MES（**默认**）；`Plc`=写 PLC SN 寄存器区（40013 起，既有流程）。非法值自动回落 `Mes` |
 | `mesUrl` | 空 | MES 接收 SN 的完整 URL（http/https），仅 `Mes` 时生效；留空时 SN 不上传并日志 WARN（每进程一次） |
-| `mesTimeoutMs` | `3000` | MES 上传超时。上传走后台线程，**不占用 PLC 握手节拍**，超时只决定该次上传判失败 |
+| `mesTimeoutMs` | 3000 | MES 上传超时。上传走后台线程，**不占用 PLC 握手节拍** |
 
-- **上报内容**：HTTP POST JSON `{"sn":"…","model":"…","time":"…"}`（当前为通用占位格式，
-  客户 MES 协议定稿后由开发者按 `docs/MES对接说明.md` §5 调整报文，配置不变）；
-  扫码 OK 与人工补录拿到有效 SN 时上报，失败/超时不发"空 SN"。成功/失败只记日志、
-  不重试（MES 是对账数据，PLC 流程不依赖它）。
-- **握手不受影响**：无论 `target` 配什么，扫码结果 40004 的 1/2 写入与人工补录覆盖流程
-  完全不变；`Mes`（默认）时 40013~ SN 区保持全 0（PLC 侧不用再读本区）。
+- **上报内容**：HTTP POST JSON `{"sn":"…","model":"…","time":"…"}`（通用占位格式，客户 MES
+  协议定稿后只需按 `docs/MES对接说明.md` §5 调整报文，配置不变）；成功/失败只记日志不重试
+  （MES 是对账数据，PLC 流程不依赖它）。
+- **握手不受影响**：无论 `target` 配什么，40004 结果 1/2 与人工补录流程完全不变；
+  `Mes`（默认）时 40013~ SN 区保持全 0。
 
-### 产品型号
+### 界面语言与主题（language / theme）
 
-- **当前型号**：主界面标题栏型号下拉直切（候选 = 预置 U171/Z121 ∪ 配置 `productModels`）。
-  切换立即生效：写盘 + 按新型号查程序表 + 下发 PLC（40007 序号 + 40008~40012 字符串）+ 窗口重排，
-  **设备连接一路复用不断开**。
-- **型号集合的增删**：在系统设置 PLC 区"产品型号配置…"弹窗维护——表格左列"选中"勾选框 + 右上角
-  【删除选中】按钮支持**多选/单选删除**（序号、型号名称全居中显示），新增直接在最下行填；确定写回
-  `plc.modelIndexes`；**新增型号名自动并入 `productModels` 候选**，标题栏/点位配置立刻可选。
-- 窗口总数与"窗口↔点位"铺排随型号走（见下），所以换型号要连"型号点位表"一并对齐。
-
-### 通用（language/theme，V2.15.0/V2.16.2）
-
-| 字段 | 默认 | 白话说明 |
+| 字段 | 默认 | 说明 |
 | --- | --- | --- |
-| `language` | `zh-CN` | 界面语言：`zh-CN`=中文 / `en-US`=English。主界面标题栏【选项】下拉菜单第一项可改（V2.17.0 起收进菜单，此前 V2.15.1 为独立按钮），**点击即切即存**（热切换无需重启、立即写盘）；非法/空值自动回落中文。仅界面文字翻译，**日志保持中文**；OK/NG/PLC/IP/SN 等专有名词不翻译 |
-| `theme` | `Light` | 界面主题：`Light`=浅色 / `Dark`=深色。主界面标题栏【选项】下拉菜单第二项可改（V2.17.0 起收进菜单，此前 V2.16.2 为独立按钮），**点击即切即存**（全界面立即换肤、无需重启、立即写盘）；非法/空值自动回落浅色。OK绿/NG红/PLC灯/主按钮蓝等语义色两主题不变 |
-
-### 软件授权（V2.17.0，与 AgingTestSystem/HJVision 同源）
-
-- **入口**：主界面标题栏【选项】→【软件授权】（人人可开，无需登录）。打开显示设备ID/
-  设备码/激活状态 → 把设备码报给厂商换激活码 → 粘进激活码框点【激活】（对不上静默无操作）。
-- **一键激活**：双击 `IrisVision/tools/auto_activate.bat` 即永久激活（`-Mode trial` 试用 30 天、
-  `-DryRun` 只算码不写盘；另有同逻辑 `auto_activate.py`）。同一套《获取激活码》工具通用。
-- **语义**：无启动闸、不拦生产。新设备/过期每小时提醒一次，只置灰【系统设置】按钮；
-  激活成功关闭授权窗即自动解灰，不用重启。授权文件为程序目录 `MainSetting.ini`
- （`[RunHash] RunHash1/RunHash2`，跟机器，git 不入库）。
+| `language` | `zh-CN` | `zh-CN`=中文 / `en-US`=English。主界面标题栏【选项】下拉菜单切换，**点击即切即存**（热切换免重启）；仅界面文字翻译，日志保持中文 |
+| `theme` | `Light` | `Light`=浅色 / `Dark`=深色。同在【选项】下拉菜单，全界面立即换肤免重启；OK 绿/NG 红/PLC 灯等语义色两主题不变 |
 
 ### 显示窗口（display{}）
 
-主界面中央是窗口矩阵，**默认"自适应"铺排**（勾选后行列输入框置灰）：
-```
-U171 默认铺排（4×7=28 格，点位 24 个 → 窗口 25~28 为空窗口）
-┌────┬────┬────┬────┬────┬────┬────┐
-│上·1│上·2│上·3│上·4│上·5│上·6│上·7│   ← 窗口 1~20 = 上相机点位 1~20
-├────┼────┼────┼────┼────┼────┼────┤
-│上·8│…  │上·14│    │    │    │    │
-├────┼────┼────┼────┼────┼────┼────┤
-│上·15…上·20│    │    │    │    │    │
-├────┼────┼────┼────┼────┼────┼────┤
-│下·1│下·2│下·3│下·4│空  │空  │空  │   ← 窗口 21~24 = 下相机点位 1~4
-└────┴────┴────┴────┴────┴────┴────┘
-```
-
-- **窗口总数**：自适应 = 各相机当前位置数表条目和（U171=20+4=24、Z121=26+3=29）；不勾自适 = 手填
-  行×列（放不下自动补行），点位不够的格子 = **空窗口**（照样建窗占满显示区，只是不接图）。
-- **自动铺排规则**：列最多 7，遍历列取"行列和最小、并列列多者优先"，窗口尽量放大占满
-  （1→1×1、4→2×2、7→2×4、28→4×7）。行数超高时窗口区自动出竖直滚动条。
-- **窗口↔点位映射**：默认"前上相机后下相机"铺排；在"窗口/点位配置…"里可按型号手动**编辑点位 /
-  交换位置 / 恢复默认**（结果按型号存 `display.windowPointMaps`），被禁用的点位跟窗口走（交换时
-  禁用标志一起搬）。
-- **存图点位 = 相机点位号**（不是窗口序号）：上下相机点位号各自从 1 起会重复，靠存图目录里的
-  `{相机}` 层隔开。
+窗口数量默认"**自适应**"铺排（勾选后行列输入框置灰，按当前型号点位表计算；不勾则手填行×列、
+自动补行，放不下的多出格 = 空窗口）。自适应规则：列最多 7、取"行列和最小、并列列多者优先"
+（21 点位 → 3×7）。U171/Z121 都是 21 点位 → 正好 3×7 占满无空窗。
 
 | 开关字段 | 默认 | 效果 |
 | --- | --- | --- |
 | `autoFit` | true | 行列是否自动铺排 |
-| `rows` / `columns` | 4 / 7 | 非自适应下的手填行列 |
-| `okColorName` / `ngColorName` | Green / Red | **OK=绿、NG=红**（现场习惯，可改；V2.16.4 起配错名回默认绿/红、不再隐身） |
-| `windowOkNgVisible` | true | 窗口右下角 OK/NG 徽标；**只随开关走（V2.14.26 还原）**——开着就显示，未判定时默认绿 OK、拿到判定按结果变色 |
+| `rows` / `columns` | 4 / 7 | 非自适应下的手填行列（用时才生效） |
+| `okColorName` / `ngColorName` | Green / Red | **OK=绿、NG=红**（现场习惯，可改；配错名回默认色不隐身） |
+| `windowOkNgVisible` | true | 窗口右下角 OK/NG 徽标——开着就显示，未判定默认绿 OK、拿到判定按结果变色 |
 | `windowIndexVisible` | true | 窗口左上角编号 |
 | `windowToolTipVisible` | true | 悬停"双击放大/还原"气泡 |
 | `titleOkNgHighlight` | true | 标题栏 OK/NG 计数用实心色块高亮 |
@@ -413,47 +306,47 @@ U171 默认铺排（4×7=28 格，点位 24 个 → 窗口 25~28 为空窗口）
 
 ### 图像归档（image{}）
 
-相机拍照 = jpeg + iv4p 两个文件（iv4p 是基恩士私有复盘格式，原样归档）。程序监听取图目录，取到
-**最新一对**就归档：**源文件名 + "_" + 时间戳**（如 `0084.jpeg → 0084_20260814_164022_461.jpeg`，
-防同点位重复拍照互相覆盖），随后删掉 FTP 源文件。
+相机拍照 = jpeg + iv4p 两个文件（iv4p 是基恩士私有复盘格式，原样归档）。取到最新一对就归档：
+**源文件名 + "_" + 时间戳**（如 `0084.jpeg → 0084_20260814_164022_461.jpeg`，防重复覆盖），
+随后删掉 FTP 源文件。
 
 ```
 E:\Images\                        ← saveRootDir（存图根目录）
 └── 2026.08.20\                   ← {年月日}（一个整体目录名，点分隔；不是年/月/日三层）
     └── SN-0001\                  ← {SN}
         ├── 上相机\               ← {相机}（把两台相机隔开，防点位号重复互相覆盖）
-        │   └── OK\               ← {OKNG}（按判定的 OK/NG 分到两个并列目录）
+        │   └── OK\               ← {OKNG}（按判定分到 OK/NG 两个并列目录）
         │       └── 0084_20260814_164022_461.jpeg  +  同名 .iv4p
         └── 下相机\
             └── NG\
 ```
 
-- `subDirs`：目录层级列表，**每级只能是一层名字/规则**（`{年月日}`/`{SN}`/`{相机}`/`{OKNG}`），
-  不要把整条路径模板粘成一级（会一层套一层嵌套，加载时旧坏配置会自动拆层修复）。
+- `subDirs`：目录层级列表，**每级只能是一层名字/规则**（`{年月日}`/`{SN}`/`{相机}`/`{OKNG}`）；
+  把整条路径粘成一级的老坏配置，加载时自动拆层修复。
 - `keepDays`：存图保留天数（默认 30，**0 = 不自动清理**）；后台每天清一次过期目录，只动保存根目录
-  下的过期目录，**绝不动相机 FTP 取图目录**；根目录误配成盘符根（如 `E:\`）时自动放弃防误删整盘。
+  过期目录，**绝不动相机 FTP 取图目录**；根目录误配成盘符根（如 `E:\`）时自动放弃防误删整盘。
 - `fileTimestampSuffix`：归档文件名是否带时间戳后缀（默认 true）。
-- FTP 取图目录（`ftpUploadDir`）由**相机侧（基恩士工程师在 IV Navigator 里配）推图**，上位机只需
-  监听落盘目录，**不用装任何 FTP 服务器**；图不到先查相机侧推图配置。
+- FTP 取图目录由**相机侧配置推图**（基恩士工程师在 IV Navigator 里配），上位机只监听落盘目录，
+  **不用装任何 FTP 服务器**；图不到先查相机侧推图配置。
 
 ### 扫码枪（scanners[]）
 
-支持多台扫码枪，**TCP**（默认，基恩士 SR TCP/IP 无协议）与**串口**两种，设置页里两张表分开配。
-任何一台扫到码都更新当前序列号；扫地枪漏读/没枪时点标题栏【人工补录】手动输入。
+支持多台扫码枪，**TCP**（默认，基恩士 SR TCP/IP 无协议）与**串口**两种，设置页两张表分开配。
+任何一台扫到码都更新当前序列号；漏读/没枪时点标题栏【人工补录】手动输入。
 
 | 字段（TCP 行） | 默认 | 说明 |
 | --- | --- | --- |
 | `enabled` | true | 是否启用 |
 | `ipAddress` / `port` | 19.87.6.100 / 9004 | TCP 地址 |
 | `triggerCommand` | LON | 连上/重连后自动发一条该指令才开始读码，发时自动补 `\r\n`；留空=不发送（枪设成上电自动读码） |
-| `ignoreScanTexts` | ERROR,ERR,NG,NOREAD | **读码失败/状态文本过滤名单（V2.14.30/V2.15.24）**：扫码枪读码失败时会按自身配置把错误字符串（如 `ERROR`、`ER,READ,00`）当条码推送，命中名单的行不当序列号（不显示、不存图），并**自动重发 LON 重试最多 3 次（间隔 1.5s）**；重试耗尽仍无码才把扫码结果写 2 通知 PLC **（V2.14.33：PLC 拿到 2 死等人工补录，补录后上位机覆盖成 1）**。瞬时读码失败可自愈，无需停线等人工补录。逗号分隔、忽略大小写；精确匹配不误伤同前缀真码，以 `*` 结尾的项按前缀匹配。留空=不过滤 |
+| `ignoreScanTexts` | ERROR,ERR,NG,NOREAD | 读码失败文本过滤名单：扫码枪读码失败会把错误字符串当"条码"推送，命中名单不当序列号处理，并**自动重发 LON 重试最多 3 次（间隔 1.5s）**；重试耗尽才把扫码结果写 2 通知 PLC（PLC 死等人工补录，补录后覆盖成 1）。瞬时读码失败可自愈。逗号分隔、忽略大小写，`*` 结尾按前缀匹配不误伤同前缀真码。留空=不过滤 |
 
 | 字段（串口行） | 默认 | 说明 |
 | --- | --- | --- |
 | `portName` / `baudRate` | COM3 / 115200 | 串口号 / 波特率 |
 | `stopBits` | "1" | 停止位，存字符串 `"1"`/`"15"`/`"2"` |
 | `parity` | None | 校验位，存枚举名 `None/Odd/Even/Mark/Space` |
-| `ignoreScanTexts` | ERROR,ERR,NG,NOREAD | 同 TCP 行的读码失败文本过滤 |
+| `ignoreScanTexts` | ERROR,ERR,NG,NOREAD | 同 TCP 行的过滤名单 |
 
 `mode` 缺省一律按 `"Tcp"`（现场就是 TCP 枪）；`scanners` 段为空时启动自动补一台启用 TCP 枪
 （19.87.6.100:9004/LON）——**排查"网络通但程序不连枪"先看 `scanners` 是否为空**。
@@ -463,24 +356,81 @@ E:\Images\                        ← saveRootDir（存图根目录）
 | 字段 | 默认 | 说明 |
 | --- | --- | --- |
 | `adminEnabled` | true | 点"系统设置"是否要登录（生产建议开，防误改配置） |
-| `adminUser` / `adminPasswordHash` | admin / admin123 的哈希 | 管理员，密码**只存 SHA-256 哈希、不存明文** |
-| `devEnabled` / `devUser` / `devPasswordHash` | true / dev / dev123 的哈希 | 开发者，登录进**开发者模式窗体**（原名功能测试：通讯验证 + 账号管理） |
+| `adminUser` / `adminPasswordHash` | admin / 初始密码由交付人当面提供 | 管理员；密码只存 **SHA-256 哈希、不存明文** |
+| `devEnabled` / `devUser` / `devPasswordHash` | true / dev / 由交付人当面提供 | 开发者，登录进开发者模式窗体（通讯验证 + 账号管理） |
 | 记住密码 | — | 勾选后用 Windows DPAPI 加密存 `%LOCALAPPDATA%\IrisVision\`（绑定本机用户，拷走无效）；管理员/开发者记录**互斥**，登录任一方会清掉另一方 |
 
-管理员密码在**登录对话框**里改（验证原密码 → 新密码两次一致且 ≥6 位 → 保存）；开发者密码不提供在线
-修改（改哈希需用工具算好写配置）。
+管理员密码在**登录对话框**里改（验证原密码 → 新密码两次一致且 ≥6 位 → 保存）；
+开发者还可在开发者模式窗体对任意账号**重置密码**。初始 starter 密码不写进任何公开文档，由交付人当面给。
+
+### 软件授权（跟机器一号一码）
+
+- **入口**：主界面标题栏【选项】→【软件授权】（人人可开，无需登录）。显示设备 ID/设备码/激活状态
+  → 把设备码报给厂商换激活码 → 粘进激活码框点【激活】。
+- **一键激活**：双击 `IrisVision/tools/auto_activate.bat`（`-Mode trial` 试用 30 天、`-DryRun` 只算码不写盘）。
+- **语义**：无启动闸、不拦生产。新设备/过期每小时提醒一次，只置灰【系统设置】按钮（PLC 轮询/
+  相机/扫码照跑）；激活成功关闭授权窗即自动解灰。授权文件 `MainSetting.ini` 跟机器走（git 不入库）。
+
+## 发布（代码混淆，一键出部署包）
+
+现场部署用**混淆版**，防反编译拿到类名/方法名/设备 IP/寄存器号/相机指令：
+
+```powershell
+& ".\IrisVision\build-obfuscated.ps1"
+```
+
+- 流程：Release 构建 → Obfuscar 混淆 → 补第三方 dll + config → 启动保活冒烟 → **自动打包上传 zip**
+  （版本号取最近 git tag）。
+- 产物：上传包 `IrisVision\bin\IrisVision_{版本号}_obfuscated.zip`（内含 exe + 第三方 dll + config +
+  Mapping.txt，已排除运行时 Logs）**直接解压部署即可**；混淆目录 `bin\Obfuscated\` 整目录拷现场亦可。
+- 混淆只改名/加密字符串，**不改功能**；配置模型 `Models*` 命名空间跳过（字段名 = appconfig.json
+  键名），保证现场旧配置可无缝升级。
+- 混淆版 PDB 失配无法断点，排查问题请用 Debug 版 + `Logs\` 按天日志。
+
+## 目录结构
+
+```
+IrisVision/                    ← 工程根
+├── Views/                     界面窗体（MainForm / SettingsForm / LoginForm /
+│                              DeveloperModeForm / WindowPointForm / DirTreeEditForm …）
+│                              ※ 静态布局在 *.Designer.cs 里可视化维护；动态部分（窗口矩阵、
+│                                 状态灯）在业务文件里运行时生成
+├── Controls/                  自绘控件（CameraDisplayControl 相机窗 + OK/NG 徽标等）
+├── Services/                  通讯与业务编排（ProductionCoordinator / PlcService /
+│                              KeyenceIV4Camera / ImageStore / ScannerService(s) /
+│                              MesService / ConnectionMonitor / SoftwareActivation）
+├── Models/                    配置模型（AppConfig 全量配置 / WindowData 单轮数据）
+├── Utils/                     ConfigStore（JSON 读写）/ SecurityUtil / LogHelper（按天日志）
+│                              / I18n 双语 / AppTheme 深浅主题 / AppIcon
+├── libs/                      本地第三方 DLL（NModbus / Newtonsoft.Json），离线可编译
+├── Resources/                 app.ico（exe 内嵌图标，7 层多尺寸）
+├── tools/                     内部工具（Obfuscar 混淆器 / Create-DesktopShortcut.ps1 /
+│                              auto_activate 激活三件套 / DocShot 拍图 harness）
+├── Config/                    运行时配置 appconfig.json（不入库，首次启动自动生成）
+└── bin/                       构建产物（不入库）
+docs/                          文档中心（手册 + 图像，见下）
+```
 
 ## 文档中心
 
 | 文档 | 用途 |
 | --- | --- |
 | `docs/IrisVision.md` | **主文档**：用户操作手册、系统总览与设备清单、扫码枪/相机/PLC 通讯详情与寄存器定义、计数结果流转、IP 参数速查、版本演进 |
-| `docs/光阑视界操作员手册.md(+pdf)` | **现场操作员版培训手册（V2.16.6 三份制）**：开机、看界面、生产流程、报警处置、点检与禁忌，大白话、每步配图 |
-| `docs/光阑视界客户技术手册.md(+pdf)` | **客户技术工艺版（V2.16.6）**：系统组成、账号权限、换型、点位程序配置、存图、MES 联调自助闭环、排障 |
-| `docs/光阑视界内部手册.md(+pdf)` | **内部版（V2.16.6）**：权限矩阵（含开发者账号）、账号全流程、工艺知识、技术实现篇、交付清单 |
+| `docs/光阑视界操作员手册.md`(+pdf) | **现场操作员版培训手册**：开机、看界面、生产流程、报警处置、点检与禁忌，大白话、每步配图 |
+| `docs/光阑视界客户技术手册.md`(+pdf) | **客户技术工艺版**：系统组成、账号权限、换型、点位程序配置、存图、MES 联调自助闭环、排障 |
+| `docs/光阑视界内部手册.md`(+pdf) | **内部版**：权限矩阵（含开发者账号）、账号全流程、工艺知识、技术实现篇、交付清单 |
 | `docs/上位机PLC通信接口定义文档.md` | PLC 侧对接视角的通讯接口定义 |
-| `docs/MES对接说明.md` | **MES 对接指南（V2.15.20）**：扫码 SN 传 MES 的配置方法、当前报文格式、协议定稿后代码修改位置、调试验证方法 |
+| `docs/MES对接说明.md` | **MES 对接指南**：扫码 SN 传 MES 的配置方法、当前报文格式、协议定稿后代码修改位置、调试验证方法 |
 | `docs/上位机通讯封装范式.md` | 通讯架构技术总结（连接/心跳/重连/UI 解耦范式，跨项目可复用） |
 
-> 代码约定（给接手的开发者）：文件 UTF-8；配置 `Config/*.json`、`Logs/`、`bin/`、`obj/` 不入库；
-> 改动后构建验证；通讯/握手/映射类改动必须同步 `docs/IrisVision.md` 并记录 `CHANGELOG.md`。
+## 给接手的开发者
+
+代码约定速记：
+
+- 文件一律 **UTF-8**；`Config/*.json`、`Logs/`、`bin/`、`obj/`、授权 `MainSetting.ini` 不入库。
+- **改动后必须构建验证**，并跑自动化测试（上方快速开始②）：构建 → 612 条回归 → 80 条 UI 交互
+  → 两轮冒烟，任一失败先分清"产品 bug"还是"约定变更"，再改。
+- 通讯/握手/映射类改动必须同步 `docs/IrisVision.md` 对应章节，并记 `CHANGELOG.md`；
+  新界面文本一律走 `I18n.T("中文","English")` 双语、新界面构造末尾接 `AppTheme` 深浅主题。
+- 混淆发布前检查 `obfuscar.xml`：**`Models*` 命名空间必须在豁免列表里**（配置字段名依赖属性名），
+  否则现场旧配置读不回；新增 `DllImport` 必须显式写 `EntryPoint`。
